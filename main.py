@@ -1,127 +1,83 @@
-###########################################################
-# Game of Life
-# Author: Toprak Ozturk
-# Start Date: 7/6/2016
-# End Date: 
-#
-# This program simulates Conway's Game of Life simulation
-#
-###########################################################
+from field import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5 import QtCore
+from threading import Thread
+import time
+import sys
 
-##Any alive cell with fewer than two alive neighbours dies, as if caused by under-population.
-##Any alive cell with two or three alive neighbours alives on to the next generation.
-##Any alive cell with more than three alive neighbours dies, as if by over-population.
-##Any dead cell with exactly three alive neighbours becomes a alive cell, as if by reproduction.
+class Window(QMainWindow):
+	BLOCK_SIZE = 10
+	def __init__(self, ioclass):
+		super().__init__()
+		self.field = ioclass
+		self.home()
+		self.start()
+		self.running = True
 
-class Block:
-    """ Most basic element of the simulation. Represents a single cell in the field """
-    def __init__(self, is_alive, x, y):
-        # stores current state of the block
-        self.alive = is_alive
-        # stores the act of block for next turn
-        self.dying = True
+	def home(self):
+		width = self.field.colsize * self.BLOCK_SIZE
+		height = self.field.rowsize * self.BLOCK_SIZE
+		# x y height width
+		self.setGeometry(50, 50, width, height)
+		self.setWindowTitle('Game of Life Simulator')
+		self.show()
 
-        self.x = x
-        self.y = y
+	def stop(self):
+		self.running = False
 
-    # turns the block off
-    def off(self):
-        self.alive = False
-        self.dying = True
+	def start(self):
+		self.running = True
 
-    # turns the block on
-    def on(self):
-        self.alive = True
-        self.dying = False
+	def paintEvent(self, event):
 
-    # this function determines what the block is going to do depending on their adjents.
-    # `adjents` parameter is list of Blocks
-    def change_act(self, adjents):
-        alive_cell_count = len([x for x in adjents if x.alive])
-        if self.alive:
-            if alive_cell_count < 2:
-                self.dying = True
-            if alive_cell_count in [2, 3]:
-                self.dying = False
-            if alive_cell_count > 3:
-                self.dying = True
-        else:
-            if alive_cell_count == 3:
-                self.dying = False
-        
-    def __str__(self):
-        if self.alive:
-            return "x"
-        else:
-            return " "
+		qp = QPainter()
+		qp.begin(self)
 
-class Field:
-    """ Matrix of blocks """
-    def __init__(self, cols, rows):
-        self.field = [[Block(False, x, y) for x in range(cols)] for y in range(rows)]
-        self.colsize = cols
-        self.rowsize = rows
+		for row in self.field.field:
+			for cell in row:
+				self.paint_block(qp, cell)
 
-    # returns all the adjent blocks by given x and y.
-    # return type: list of blocks
-    def return_adj(self, x, y):
-        result = []
-        
-        if not y == 0:
-            result.append(self.field[y-1][x])   # top
-        if not (x == 0 or y == 0):
-            result.append(self.field[y-1][x-1]) # top left  corner
-        if not x == 0:
-            result.append(self.field[y][x-1])   # left
-        if not (x == 0 or y == self.colsize - 1):
-            result.append(self.field[y+1][x-1]) # bot left  corner
-        if not y == self.colsize - 1:
-            result.append(self.field[y+1][x])   # bottom
-        if not (y == self.colsize - 1 or x == self.rowsize - 1): 
-            result.append(self.field[y+1][x+1]) # bot right corner
-        if not x == self.rowsize - 1:
-            result.append(self.field[y][x+1])   # right
-        if not (x == self.rowsize - 1 or y == 0):
-            result.append(self.field[y-1][x+1]) # top right corner
+		qp.end()
 
-        return result
+		self.update()	
 
+	def paint_block(self, qp, cell):
+		color = QColor(0, 0, 0)
+		if cell.alive:
+			color = QColor(255, 255, 255)
+		else:
+			color = QColor(0, 0, 0)
 
-    def tick(self):
-        # decide the act of cells
-        for row in self.field:
-            for cell in row:
-                adjents = field.return_adj(cell.x, cell.y)
-                cell.change_act(adjents)
-                
-        for row in self.field:
-            for cell in row:
-                if cell.dying:
-                    cell.off()
-                else:
-                    cell.on()
-        
-    def __str__(self):
-        result = 'Col: {} Row: {}\n'.format(self.colsize, self.rowsize)
-        result = result + 'x' + '-' * self.colsize + 'x' + '\n'
-        
-        for row in self.field:
-            result = result + "|"
-            
-            for elem in row:
-                result = result + str(elem)
-                
-            result = result + '|\n'
-            
-        return result + 'x' + '-' * self.colsize + 'x' + '\n'
+		qp.setPen(color)
+		qp.setBrush(color)
+		qp.drawRect(
+			cell.x * self.BLOCK_SIZE, 
+			cell.y * self.BLOCK_SIZE, 
+			self.BLOCK_SIZE, 
+			self.BLOCK_SIZE
+			)
+
+def ticker(field, window):
+	print('Thread init complete')
+	while True:
+		time.sleep(0.5)
+		if window.running:
+			field.tick()
 
 if __name__ == '__main__':
-    field = Field(40, 40)
+	app = QApplication(sys.argv)
+	field = Field(50, 50)
 
-    field.field[10][10].on()
-    field.field[10][11].on()
-    field.field[10][12].on()
-    
-    while True:
-        print(field)
-        field.tick()
+	field.field[10][10].on()
+	field.field[9][11].on()
+	field.field[8][11].on()
+	field.field[9][12].on()
+	field.field[8][10].on()
+
+	window = Window(field)
+	thread = Thread(target=ticker, args=[field, window])
+	print('Thread created')
+	thread.start()
+	print('Thread running')
+	sys.exit(app.exec_())
