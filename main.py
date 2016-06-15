@@ -15,8 +15,8 @@ class Window(QMainWindow):
 		ioclass (Field): Main cell matrix which that the window process"""
 		super().__init__()
 		self.field = ioclass
-		width = self.field.colsize * self.BLOCK_SIZE
-		height = self.field.rowsize * self.BLOCK_SIZE
+		width = self.field.rowsize * self.BLOCK_SIZE
+		height = self.field.colsize * self.BLOCK_SIZE
 		# x y height width
 		self.setGeometry(50, 50, width, height)
 		self.setWindowTitle('Game of Life Simulator')
