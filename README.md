@@ -1,6 +1,6 @@
 # Game of Life
 
-This application emulates of Conway's Game of Life. [Wikipedia link](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life)
+This application emulates Conway's Game of Life. [Wikipedia link](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life)
 
 ## Rules
 
